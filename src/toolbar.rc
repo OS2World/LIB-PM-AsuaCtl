@@ -1,0 +1,47 @@
+/*  
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License Version 2 as
+ *  published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
+
+/* Asuactl.dll
+ * Pasek narz©dzi - mapy bitowe.
+ *
+ * (c) 1999 Wojciech Gazda
+ *
+ * toolbar.rc
+ *
+ * $Author:$
+ * $Date:$
+ * $Name:$
+ * $RCSfile$
+ * $Revision:$
+ */
+
+
+
+// Mapy bitowe
+// Przycisk na pasku tytuˆu paska narz©dzi
+BITMAP MONO_UPTRIANGL    "res/trm_up.bmp"
+BITMAP MONO_DOWNTRIANGL  "res/trm_down.bmp"
+BITMAP COLOR_UPTRIANGL   "res/tr_up.bmp"
+BITMAP COLOR_DOWNTRIANGL "res/tr_down.bmp"
+
+// Przycisk obracania okna
+BITMAP ROTATE_BACK       "res/rotate_m.bmp"
+BITMAP ROTATE_OUTLINE    "res/rotate_o.bmp"
+BITMAP ROTATE_FILL       "res/rotate_i.bmp"
+
+
+/*
+ * $Log:$
+ */

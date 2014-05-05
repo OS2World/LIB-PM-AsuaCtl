@@ -1,0 +1,130 @@
+/*  
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License Version 2 as
+ *  published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
+
+
+/* Asuactl.dll
+ * Gˆ¢wny plik zasob¢w biblioteki dynamicznej
+ *
+ * (c) 1999 Wojciech Gazda
+ *
+ * asuactl.rc
+ *
+ * $Author: Wojciech_Gazda $
+ * $Date: 1999/06/27 12:52:07 $
+ * $Name:  $
+ * $RCSfile: asuactl.rc $
+ * $Revision: 1.1 $
+ */
+
+#include <os2.h>
+
+// Definicje zasob¢w dla paska narz©dzi
+// Zakres symboli: 1900 do 1999
+//
+#include "winbutt.h"
+#include  "tcontrol.h"
+#include  "dirdlg.h"
+
+ICON ICO_MYCOMP "res\MYCOMP.ICO"
+ICON ICO_FOLDER "res\FOLDER.ICO"
+ICON ICO_DISK   "res\ICO2.ICO"
+ICON ICO_CDROM  "res\CDWARP.ICO"
+ICON ICO_FLOPPY "res\FLOPPY.ICO"
+
+RCINCLUDE "toolbar.rc"
+
+
+// Definicje zasob¢w dla przycisku WC_WINBUTTON
+// Zakres symboli: 2000 do 2099
+//
+RCINCLUDE "winbutt.rc"
+
+
+DLGTEMPLATE DLG_DIRDLG_OKCANCEL
+BEGIN
+    DIALOG "Choose directory:", DLG_DIRDLG_OKCANCEL, 104, 77, 193, 166, FS_NOBYTEALIGN |
+                FS_DLGBORDER | WS_CLIPSIBLINGS | WS_SAVEBITS | WS_VISIBLE,
+                FCF_TITLEBAR | FCF_SYSMENU | FCF_TASKLIST
+    BEGIN
+        CONTROL "~OK",                  DID_OK, 50, 2, 45, 14, WC_BUTTON,
+                                            BS_PUSHBUTTON | BS_DEFAULT |
+                                            WS_GROUP | WS_TABSTOP | WS_VISIBLE
+
+        CONTROL "Cancel",              DID_CANCEL,100, 2, 45, 14, WC_BUTTON,
+                                            BS_PUSHBUTTON |
+                                            WS_GROUP | WS_TABSTOP | WS_VISIBLE
+
+        CONTROL "",                    CNR_TREE, 10, 21, 174, 137, WC_CONTAINER,
+                                            CCS_SINGLESEL | CCS_AUTOPOSITION | CCS_MINIICONS |
+                                            WS_TABSTOP | WS_VISIBLE
+    END
+END
+
+
+DLGTEMPLATE DLG_DIRDLG_OKCANCEL_W
+BEGIN
+    DIALOG "Choose directory:", DLG_DIRDLG_OKCANCEL_W, 104, 77, 193, 166, FS_NOBYTEALIGN |
+                FS_DLGBORDER | WS_CLIPSIBLINGS | WS_SAVEBITS | WS_VISIBLE,
+                FCF_TITLEBAR | FCF_SYSMENU | FCF_TASKLIST
+    BEGIN
+        CONTROL "~OK",                  DID_OK, 50, 2, 45, 14, WC_WINBUTTON,
+                                            BS_PUSHBUTTON | BS_DEFAULT | BS_BITMAP |
+                                            WS_GROUP | WS_TABSTOP | WS_VISIBLE
+           CTLDATA 32, BBMP_OK, 0, 0 ,0, 0, 0, 0
+
+        CONTROL "Cancel",              DID_CANCEL,100, 2, 45, 14, WC_WINBUTTON,
+                                            BS_PUSHBUTTON | BS_BITMAP |
+                                            WS_GROUP | WS_TABSTOP | WS_VISIBLE
+           CTLDATA 32, BBMP_CANCEL, 0, 0 ,0, 0, 0, 0
+        CONTROL "",                    CNR_TREE, 10, 21, 174, 137, WC_CONTAINER,
+                                            CCS_SINGLESEL | CCS_AUTOPOSITION | CCS_MINIICONS |
+                                            WS_TABSTOP | WS_VISIBLE
+    END
+END
+
+
+DLGTEMPLATE DLG_DIRDLG_OK_W
+BEGIN
+    DIALOG "Choose directory:", DLG_DIRDLG_OK_W, 104, 77, 193, 166, FS_NOBYTEALIGN |
+                FS_DLGBORDER | WS_CLIPSIBLINGS | WS_SAVEBITS | WS_VISIBLE,
+                FCF_TITLEBAR | FCF_SYSMENU | FCF_TASKLIST
+    BEGIN
+        CONTROL "~OK",                  DID_OK, 76, 2, 45, 14, WC_WINBUTTON,
+                                            BS_PUSHBUTTON | BS_DEFAULT | BS_BITMAP |
+                                            WS_GROUP | WS_TABSTOP | WS_VISIBLE
+           CTLDATA 32, BBMP_OK, 0, 0 ,0, 0, 0, 0
+
+        CONTROL "",                    CNR_TREE, 10, 21, 174, 137, WC_CONTAINER,
+                                            CCS_SINGLESEL | CCS_AUTOPOSITION | CCS_MINIICONS |
+                                            WS_TABSTOP | WS_VISIBLE
+    END
+END
+
+DLGTEMPLATE DLG_DIRDLG_OK
+BEGIN
+    DIALOG "Choose directory:", DLG_DIRDLG_OK, 104, 77, 193, 166, FS_NOBYTEALIGN |
+                FS_DLGBORDER | WS_CLIPSIBLINGS | WS_SAVEBITS | WS_VISIBLE,
+                FCF_TITLEBAR | FCF_SYSMENU | FCF_TASKLIST
+    BEGIN
+        CONTROL "~OK",                  DID_OK, 76, 2, 45, 14, WC_BUTTON,
+                                            BS_PUSHBUTTON | BS_DEFAULT |
+                                            WS_GROUP | WS_TABSTOP | WS_VISIBLE
+
+        CONTROL "",                    CNR_TREE, 10, 21, 174, 137, WC_CONTAINER,
+                                            CCS_SINGLESEL | CCS_AUTOPOSITION | CCS_MINIICONS |
+                                            WS_TABSTOP | WS_VISIBLE
+    END
+END
+

@@ -1,0 +1,32 @@
+/* Asuactl.dll
+ * Pasek narz©dzi - mapy bitowe.
+ *
+ * (c) 1999 Wojciech Gazda
+ *
+ * toolbar.rc
+ *
+ * $Author:$
+ * $Date:$
+ * $Name:$
+ * $RCSfile$
+ * $Revision:$
+ */
+
+
+
+// Mapy bitowe
+// Przycisk na pasku tytuˆu paska narz©dzi
+BITMAP MONO_UPTRIANGL    "toolbar/res/trm_up.bmp"
+BITMAP MONO_DOWNTRIANGL  "toolbar/res/trm_down.bmp"
+BITMAP COLOR_UPTRIANGL   "toolbar/res/tr_up.bmp"
+BITMAP COLOR_DOWNTRIANGL "toolbar/res/tr_down.bmp"
+
+// Przycisk obracania okna
+BITMAP ROTATE_BACK       "toolbar/res/rotate_m.bmp"
+BITMAP ROTATE_OUTLINE    "toolbar/res/rotate_o.bmp"
+BITMAP ROTATE_FILL       "toolbar/res/rotate_i.bmp"
+
+
+/*
+ * $Log:$
+ */

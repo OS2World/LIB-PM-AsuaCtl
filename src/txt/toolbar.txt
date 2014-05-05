@@ -1,0 +1,642 @@
+Bˆ©dy:
+  Dokumentacja:
+  - brak opisu TN_ROTATE
+
+  Program:
+  - bˆ¥d w TM_CALCNEWRECT, TM_QUERYWIDTH, TM_QUERYHEIGHT.
+    komunikaty nie uwzgl©dniaj¥ przycisku "Rotate".
+  - obiekty nie s¥ justowane po˜rodku paska:
+    w pionie dla poziomych pask¢w, w poziomie dla pionowych pask¢w narz©dzi.
+
+*******************************
+Style paska narz©dzi:
+
+	Sterowanie rozmieszczeniem obiekt¢w w momencie gdy nie mieszcz¥ si© na pasku:
+TBS_STANDARD	Obiekty nie mieszcz¥ce si© s¥ obcinane.
+
+TBS_SCROLLABLE  Gdy obiekty nie mieszcz¥ si©, pasek wy˜wietla przyciski umo¾liwiaj¥ce przewijania zawarto˜ci paska narz©dzi (jeszcze nie dziaˆa).
+
+TBS_MULTILINE	Obiekty nie mieszcz¥ce si© zostaj¥ przeniesione do nowej linii (jeszcze nie dziaˆa).
+
+TBS_MOVEWITHOWNER 	Pasek w stanie floating jest przesuwany wraz z wˆa˜cicelem.
+
+TBS_ENABLEMINIMIZE      U¾ycie tej opcji uaktywnia minimalizacj© okna za pomoc¥ myszy (klikni©cie na pasku tytuˆu powoduje minimalizacj© i maksymalizacj©).
+
+TBS_MOVEBUTTON 		Pasek wy˜wietla przycisk (po prawej stronie), kt¢ry umo¾liwia przesuwanie go za pomoc¥ myszy.
+
+TBS_FIXBUTTON      	Na przycisku przesuwania paska pojawia si© dodatkowe pole (tr¢jk¥cik) umo¾liwiaj¥cy odklejanie i przyklejanie paska narz©dzi do okna rodzicielskiego.
+
+TBS_ROTATEBUTTON    	Pasek narz©dzi wy˜wietla przycisk umo¾liwiaj¥cy obracanie paska narz©dzi za pomoc¥ myszy.
+
+
+
+*******************************
+Parametry prezentacji i standardowe kolory.
+
+
+*******************************
+Identyfikatory wewn©trznych okien potomnych paska narz©dzi.
+
+
+*******************************
+Struktury danych:
+
+typedef struct _TOOLINFO
+{ USHORT  cb;                 // Rozmiar struktury w bajtach
+  USHORT  flToolAttrs;        // Atrybuty okna
+  USHORT  usMaxLength;        // Maksymalna dˆugo˜† paska narz©dzi
+} TOOLINFO;
+
+typedef struct _TOOLADJ
+{ HWND   hwndToolBar;         // Uchwyt paska narz©dzi
+  HWND   hwndParent;          // Uchwyt proponowanego okna rodzicielskiego
+  RECTL  rclSizePos;          // Proponowana pozycja i rozmiary paska
+  ULONG  flAttrs;             // Proponowane atrybuty paska
+  ULONG  flState;             // Poprzedni stan paska narz©dzi (dla TN_AUTOSIZE - aktualny)
+} TOOLADJ;
+
+typedef struct _TOOLTRACK
+{ HWND   hwndToolBar;         // Uchwyt paska narz©dzi
+  HWND   hwndParent;          // Uchwyt okna rodzicielskiego
+  RECTL  rclSizePos;          // Rozmiar i pozycja paska narz©dzi wzgl©dem okna rodzicielskiego
+  RECTL  rclBoundary;         // Obszar ruchu (wewn¥trz okna rodzicielskiego)
+  ULONG  flAttrs;             // Atrybuty paska
+  ULONG  flState;             // Aktualny stan paska narz©dzi
+} TOOLTRACK;
+
+typedef struct _TOOLOBJ
+{ ULONG   iPosition;          // Poˆo¾enie obiektu na pasku narz©dzi (numer kolejny)
+  ULONG   ulGroup;            // Grupa do kt¢rej nale¾y obiekt (wa¾ne tylko dla przycisk¢w)
+  ULONG   flAttribute;        // Dodatkowe atrybuty obiektu
+  ULONG   cx, cy;             // Pocz¥tkowe wymiary obiektu (nie dotyczy przycisk¢w TBO_BUTTON)
+  ULONG   id;                 // Identyfikator obiektu
+  ULONG   ulUser;             // Pole do wykorzystania przez u¾ytkownika
+} TOOLOBJ;
+
+	Struktura ta jest wykorzystywana przez komonikaty TM_INSERTOBJECT, TM_QUERYOBJECT i TM_SETOBJECT. Jej poszczeg¢lne pola zawieraj¥ nast©uj¥ce warto˜ci:
+
+ - iPosition	Poˆo¾enie obiektu na pasku narz©dzi, liczone od pocz¥tku paska. Podczas dodawania obiektu mo¾na w tym polu poda† TB_END, co spowoduje dodanie obiektu na koäcu.
+
+ - ulGroup	Grupa obiekt¢w. Pole to ma znaczenie tylko dla obiekt¢w utowrzonych z atrybutami TBO_BUTTON i TBO_STDBUTTON, okre˜la zachowanie grupy przycisk¢w. Podczas dodawania obiektu za pomoc¥ TM_INSERTOBJECT lub zmiany parametr¢w obiektu za pomoc¥ TM_SETOBJECT, mo¾na zmieni† styl caˆej grupy, co wpˆynie na zachowanie wszystkich przycisk¢w nale¾¥cych do danej grupy. Je˜li w polu flAttributes u¾yjemy:
+
+  TBO_PUSHBUTTON  - przyciski nale¾¥ce do grupy b©d¥ mogˆy by† naciskane niezle¾nie. 
+
+  TBO_CHECKBOX 	  - przyciski mo¾na naciska† niezale¾nie, przy czym po naci˜ni©ciu przycisk pozostaje wci˜ni©ty. Aby go zwolni† nale¾y nacisn¥† go jeszcze raz. Kilka przycisk¢w na raz mo¾e zostawa† w stanie wci˜ni©tym.
+
+  TBO_RADIOBUTTON - tylko jeden przycisk w grupie mo¾e zosta† naci˜ni©ty - pozostaˆe automatycznie zmieniaj¥ sw¢j stan na nienaci˜ni©ty.
+	Je¾eli nie u¾yjemy ¾adnego z powy¾szych styl¢w, to zostaje zachowany dotychczasowy styl grupy. Je¾eli podczas dodawania przycisk¢w nie u¾yli˜my ¾adnego ze styl¢w, to automatycznie zostaje przyj©ty TBO_PUSHBUTTON.
+	Przyciski nale¾¥ce do grupy nie musz¥ do siebie przylega†.
+
+- flAttribute	Opr¢cz styl¢w steruj¥cych zachowaniem grup przycisk¢w do dyspozycji s¥ nast©puj¥ce style:
+Podstawowe typy obiekt¢w:
+  TBO_STDWINDOW		okno kontrolne nie obsˆugiwane w szczeg¢lny spos¢b przez pasek narz©dzi,
+  TBO_BUTTON		przycisk (WC_WINBUTTON) w peˆni wspomagany przez pasek,
+  TBO_STDBUTON		jak wy¾ej (WC_BUTTON) opr¢cz automatycznego ustalania wymiar¢w,
+  TBO_SEPARTOR		separator.
+	Stylu TBO_STDBUTTON mo¾na tak¾e u¾y† dla okien WC_WINBUTTON, nie b©d¥ one wtedy automatycznie skalowane.
+
+Pozycjonowanie obiekt¢w:
+  TBO_BEGINALIGN 	obiekt jest justowany od pocz¥tku paska narz©dzi,
+  TBO_ENDALIGN   	obiekt jest justowany od koäca paska narz©dzi,
+  TBO_CENTERALIGN	obiekt jest centrowany,
+
+Og¢lny stan obiekt¢w:
+  TBO_HIDE	  	obiekt jest ukryty
+  TBO_DISABLE		obiekt jest zablokowany
+
+Style separator¢w:
+  SPS_FLAT		pˆaski separator - odst©p w kolorze tˆa,
+  SPS_LINE		linia w kolorze PP_BORDERDARKCOLOR
+  SPS_CONCAVE		wkl©sˆa linia 3D
+  SPS_CONVEX		wypukˆa linia 3D
+
+- cx, cy	Wymiary obiektu. Pola ignorowane w przypadku obiekt¢w stylu TBO_BUTTON, dla kt¢rych wymiary s¥ ustalane automatycznie, oraz w przypadku separator¢w, kt¢re zapewniaj¥ odst©p o szeroko˜† 5 pikseli.
+
+- id		Identyfikator obiektu. Powinien by† unikalny dla wszystkich obiekt¢w umieszczonych na pasku narz©dzi, a tak¾e dla wszystkich obiekt¢w kt¢re wstawiaj¥ komunikaty WM_COMMAND, WM_HELP i WM_SYSCOMMAND do kolejki komunikat¢w tego samego wˆa˜ciciela.
+	Je¾eli np. okno hwnd posiada pasek narz©dzi, na kt¢rym s¥ umieszczone obiekty o identyfikatorach np. 100, 101 i 102, to okno hwnd nie mo¾e ju¾ posiada† innych obiekt¢w (np. przycisk¢w) o tych samych identyfikatorach. Podobnie, inne paski narz©dzi nale¾¥ce do okna hwnd nie powinny posiada† obiekt¢w o tych samych identyfikatorach.
+
+- ulUser	Dowolne dane dostarczone przez u¾ytkownika (np. wska«nik do struktur danych skojarzonych z obiektem).
+
+
+
+
+
+typedef struct _TOOLWIN
+{ PSZ     pszClass;           // Klasa tworzonego okna
+  PSZ     pszName;            // Tekst zapisany w oknie (window text)
+  ULONG   flStyle;            // Styl tworzonego okna
+  PVOID   pCtlData;           // Wska«nik do danych class-specific
+  PVOID   pPresParams;        // Parametry prezentacji okna
+} TOOLWIN;
+
+	Struktura ta uzupeˆnia informacje przekazane za po˜rednictwem struktury TOOLOBJ, dostarczaj¥c pozostaˆych danych niezb©dnych do utworzenia okna na pasku narz©dzi:
+ - pszClass	Klasa tworzonego okna potomnego,
+ - pszName	Tekst wy˜wietlany w oknie,
+ - flStyle	Styl tworzonego okna,
+ - pCtlData	Wska«nik do danych Class-Specific,
+ - pPresParams	Wska«nik do parametr¢w prezentacji tworzonego okna.
+	Struktura ta jest u¾ywana tylko przez komunikat TM_INSERTOBJECT. Nie jest wymagana podczas tworzenia separator¢w.
+
+
+*******************************
+Kody potwierdzeä wysyˆane wraz z WM_CONTROL
+
+	TN_AUTOSIZE
+
+	Potwierdzenie to, jest generowane przez komunikat TM_AUTOSIZE, i umo¾liwia wpˆywanie na proces automatycznego pozycjonowania okna. Przekazywana struktura TOOLADJ zawiera uchwyt paska narz©dzi, uchwyt okna rodzicielskiego, proponowan¥ pozycj© i rozmiary paska, atrybuty i aktualny stan okna.
+	W trakcie przetwarzania komunikatu mo¾na zmieni† docelowe rozmiary i poˆo¾enie paska.
+
+
+
+
+
+	TN_BEGINTRACK
+
+	Potwierdzenie to jest wysyˆane bezpo˜rednio przed rozpocz©ciem przesuwania paska narz©dzi. Podczas jego obsˆugi mo¾na zmieni† wsp¢ˆrz©dne obszaru ograniczaj¥cego zapisanego w polu rclBoundary.
+	Za pomoc¥ WinSetWindowPos mo¾na natomiast zmieni† stan okna (SWP_RESTORE / SWP_MAXIMIZE / SWP_MINIMIZE), po czym konieczni nale¾y uaktualni† pola rclSizePos, rclBoundary i hwndParent prawidˆowymi warto˜ciami (w przeciwnym wypadku rezultaty b©d¥ nieprzewidywalne).
+	Pola flState i flAttrs maj¥ charakter informacyjny - ich zmiana nie wpˆywu na przetwarzanie komunikatu.
+
+
+
+
+
+	TN_BUTTONPAINT
+
+	Potwierdzenie jest generowane przez pasek narz©dzi w odpowiedzi na komunikat WM_COMMAND generowany przez obiekt stylu TBO_STDBUTTON (przycisk WC_BUTTON posiadaj¥cy styl BS_OWNERDRAW). Kod BN_PAINT zgˆaszany przez przycisk podlega translacji do TN_BUTTONPAINT. Pozostaˆe parametry, takie jak: id (identyfikator), flcontrolspec (wska«nik do struktury USERBUTTON) pozostaj¥ bez zmian.
+
+
+
+
+
+	TN_ENDTRACK
+	
+	Potwierdzenie to jest wysyˆane bezpo˜rednio po zakoäczeniu przesuwania okna. Umo¾liwia ono zmian© docelowej pozycji i wymiar¢w okna: nale¾y uaktualni† pole rclSizePos struktury TOOLTRACK.
+	Pozostaˆe pola maj¥ charaktery informacyjny i ich modyfikacja nie ma wpˆywu na proces przetwarzania komunikat¢w.
+
+
+
+
+
+	TN_TRACKING
+	
+	Potwierdzenie to jest generowane podczas przesuwania paska narz©dzi za pomoc¥ myszy. Wska«nik ulControlSpec wskazuje na struktur© POINTL, zawieraj¥c¥ aktualn¥ pozycj© lewego dolnego rogu okna, liczon¥ wzgl©dem okna rodzicielskiego.
+	W przypadku, gdy jest wˆ¥czona opcja "Full Window Drag" potwierdzenie jest generowane w odpowiedzi na ka¾dy komunikat WM_MOUSEMOVE. Gdy opcja ta jest wyˆ¥czona, a tak¾e w systemie OS/2 Warp3, potwierdzenie jest zgˆaszane bezpo˜rednio po zakoäczeniu przesuwania ramki, ale przed wygenerowaniem TN_ENDDRAG.
+
+
+
+
+	
+	TN_FIXTOOL, TN_MINIMIZE, TN_RESTORE.
+
+	Potwierdzenia te s¥ zgˆaszane podczas wykonywania funkcji WinSetWindowPos, w zale¾no˜ci od stanu bit¢w steruj¥cych przekazanych za pomoc¥ parametru fl:
+- TN_FIXTOOL  jest zgˆaszany podczas dokowania, gdy jest ustawiony bit SWP_MAXIMIZE,
+- TN_MINIMIZE jest zgˆaszany podczas minimalizacjim gdy jest ustawiony bit SWP_MINIMIZE, 
+- TN_RESTORE  jest zgˆaszany podczas przej˜cia do stanu "floating", gdy jest ustawiony bit SWP_RESTORE.
+	Gdy kt¢rykolwiek z bit¢w: SWP_MINIMIZE, SWP_MAXIMIZE lub SWP_RESTORE jest ustawiony, WinSetWindowPos ignoruje wsp¢ˆrz©dne i pozycj© przekazan¥ w swoich parametrach, wysyˆaj¥c w zamian potwierdzenia.
+	Wywoˆania funkcji WinSetWindowPos z innymi zestawami bit¢w steruj¥cych nie powoduj¥ zgˆaszania potwierdzeä - u¾ytkownik ma wtedy peˆn¥ kontrol© nad pozycj¥ i rozmiarami paska.
+	Podczas przetwarznia potwierdzeä, wˆa˜ciciel paska mo¾e zmienia† nast©puj¥ce parametry, ptrzekazane za po˜rednictwem struktury TOOLADJ:
+- uchwyt okna rodzicielskiego hwndParent (za pomoc¥ WinSetParent), co np. po zmianie okna rodzicielskiego na HWND_DESKTOP umo¾liwia przesuwanie paska poza granicami okna aplikacji,
+- rozmiary i pozycj© docelow¥ poprzez zmodyfikowanie struktury rclSizePos. Pozycja jest liczona wzgl©dem okna rodzicielskiego,
+- atrybuty, poprzez modyfikacj© bit¢w zmiennej flAttrs. 
+
+	Pole flState struktury TOOLADJ zawiera poprzedni stan okna (TST_FIXED, TST_MINIMIZED lub TST_ROTATED), dzi©ki czemu parametry stanu docelowego mo¾na uzale¾ni† od stanu poprzedniego.
+
+
+
+
+*******************************
+Komunikaty systemowe otrzymywane przez pasek narz©dzi.
+
+	WM_MINMAXFRAME
+	WM_PRESPARAMCHANGED
+	WM_QUERYWINDOWPARAMS
+	WM_SETWINDOWPARAMS
+	WM_TRACKFRAME
+	
+
+
+*******************************
+Komunikaty steruj¥ce:
+
+	TM_AUTOSIZE
+Parametry:
+  mp1	- [ULONG] ulMaxLength - maksymalna dˆugo˜† paska
+  mp2	- [ULONG] ulReserved - zarezerwowany
+  
+Rezultaty:
+	TRUE  - wymiary paska zmieniˆy si©
+	FALSE - wymiary paska narz©dzi nie ulegˆy zmianie
+
+	Dziaˆanie komunikatu jest uzale¾nione od aktualnego stanu paska narz©dzi. Pozycjonowanie przebiega zgodnie z nast©puj¥cymi reguˆami: 
+ - gdy pasek narz©dzi jest zminimalizowany lub zadokowany (zmaksymalizowany) jest on autoamtycznie ustawiany wzgl©dem okna rodzicielskiego zgodnie z warto˜ci¥ atrybut¢w:
+  TBA_FIXEDTOP    - ustawia poziomy pasek od lewej przy g¢rnej kraw©dzi okna,
+  TBA_FIXEDLEFT   - ustawia pionowy pasek od g¢ry przy lewej kraw©dzi okna,
+  TBA_FIXEDBOTTOM - ustawia poziomy pasek od lewej przy dolnej kraw©dzi okna,
+  TBA_FIXEDRIGHT  - ustawia pionowy pasek od g¢ry przy prawej kraw©dzi okna,
+- gdy pasek jest w stanie "pˆywaj¥cym" jego pozycja nie zmienia si©.
+
+	Skalowanie przebiega zgodnie z nast©uj¥cymi reguˆami:
+- gdy pasek jest zadokowany (zmaksymalizowany) jest on rozci¥gany na caˆ¥ szeroko˜† okna rodzicielskiego,
+- gdy pasek jest zminimalizowany, jego rozmiar jest zmniejszany tak, aby mie˜ciˆ si© na nim tylko pasek tytuˆu,
+- gdy pasek jest w stanie "pˆywaj¥cym", jego rozmiar jest korygowany w taki spos¢b aby pomie˜ciˆy si© wszystkie obiekty umieszczone na nim. Parametr ulMaxLength umo¾liwia zmniejszenie wymiar¢w paska, w przypadku gdy jest na nim tyle obiekt¢w, ¾e wszystkie nie zmie˜ciˆyby si© na ekranie. Parametr ulMaxLength jest igonorowany gdy przyjmuje warto˜† r¢wn¥ 0.  
+
+	Pasek narz©dzi podczas przetwarzania komunikatu TM_AUTOSIZE wysyˆa do wˆa˜ciciela potwierdzenie TN_AUTOSIZE. Podczas przetwarzania potwierdzenia, wˆa˜ciciel mo¾e wpˆywa† na proces pozycjonowania i skalowania paska.
+
+
+
+
+
+	TM_CALCNEWRECT
+Parametry:
+  mp1	- [TOOLADJ] adjNewRect
+  mp2	- [ULONG]   ulReserved   
+
+Rezultaty:
+	Nowa pozycja i wymiary w polu rclSizePos	
+
+Opis:
+	Komunikat umo¾liwia obliczenie proponowanych wymiar¢w i poˆo¾enia paska narz©dzi na podstawie zawarto˜†i struktury adjNewRect. Nast©uj¥ce pola struktury TOOLADJ powinny zosta† zainicjowane przed wysˆaniem komunikatu:
+  flState	- nale¾y ustawi† wybrane flagi TST_* opisuj¥ce mowy stan paska narz©dzi,
+  flAttrs	- nale¾y ustawi† wybrane flagi TBA_* opisuj¥ce nowy stan paska narz©dzi.
+
+W odpowiedzi, w strukturze TOOLADJ zostaj¥ wypeˆnione nast©puj¥ce pola:
+  hwndToolBar 	- uchwyt paska narz©dzi
+  hwndParent	- uchwyt okna rodzicielskiego (m¢gˆ by† ustawiony przez WinSetParent),
+  rclSizePos	- nowa pozycja i wymiary paska narz©dzi liczone wzgl©dem okna rodzicielskiego.
+
+	Komunikat uˆatwia pozycjonowanie paska podczas obsˆugi potwierdzeä TN_FIXTOOL, TN_MINIMIZE i TN_RESTORE, umo¾liwiaj¥c ˆatwe obliczenie nowej pozycji po modyfikacji atrybut¢w flAttrs i stanu flState, kt¢r¥ przed powrotem mo¾na jeszcze dodatkow zmodyfikowa†. 
+	Pasek wysyˆa ten komunikat sam do siebie, podczas minimalizacji/maksymalizacji/przej˜cia do stanu "floating".
+
+
+
+
+
+	TM_DELETEOBJECT
+Parametry:
+  mp1	- [ULONG] objId		Identyfikator usuwanego obiektu
+  mp2	- [ULONG] ulReserved	Zarezerwowany, r¢wny 0
+
+Powr¢t:
+  FALSE - usuni©cie obiektu nie powiodˆo si©
+  TRUE  - usuni©cie obiektu zakoäczyˆo si© sukcesem
+
+Opis:
+	Komunikat umo¾liwia usuni©cie obiektu o podanym identyfikatorze.
+
+
+
+
+
+	TM_ENABLEROTATE
+Paremtry:
+  mp1	- [BOOL]  bEnable      Zncznik odblokowania pczycisku obracania okna
+  mp2	- [ULONG] ulReserved   Zarezerwowany, r¢wny 0.
+
+Rezultaty:
+	Zarezerwowany, r¢wny 0.
+
+Opis:
+	Komunikat umo¾liwia ukrycie (zablokowanie) lub odblokowanie przycisku obracania okna.
+
+
+
+
+
+	TM_IDFROMPOSITION
+Parametry:
+  mp1	- [LONG]	Pozycja obiektu
+  mp2   - [ULONG]	Zarezerwowany. 
+
+Rezultaty:
+	Identyfikator obiektu.
+
+Opis:
+	Funkcja odczytuje identyfikator obiektu o podanej pozycji. Jako mp1 mo¾na tak¾e poda† TB_END, dzi©ki czemu zostanie odczytany identyfikator ostatniego obiektu.
+
+
+
+
+
+
+	TM_INSERTOBJECT
+Parametry:
+  mp1	- [TOOLOBJ]	Wska«nik do struktury zawieraj¥cej definicj© tworzonego obiektu
+  mp2	- [TOOLWIN]	Wska«nik do struktury opisuj¥cej tworzone na pasku narz©dzi okno
+
+Rezultaty:
+	TRUE  - obiekt utworzono poprawnie
+	FALSE - bˆ¥d tworzenia obiektu
+
+	Komunikat umo¾liwia umieszczenie obiektu na pasku narz©dzi. Gˆ¢wny opis obiektu powinien zosta† zawarty w strukturze TOOLOBJ, do kt¢rej wska«nik przekazujemy za po˜rednictwem parametru mp1. Obiekty inne ni¾ separatory, wymagaj¥ dodatkowo struktury TOOLWIN zawieraj¥cej opis tworzonego okna.
+	Proces tworzenia obiektu zale¾y od opcji przekazanych w polu flAttribute strutktur TOOLOBJ:
+
+  TBO_STDWINDOW - powoduje utworzenie okna kontrolnego, o parametrach opisanych w strukturze TOOLWIN, kt¢ra zawiera:
+- klas© okna, 
+- tekst wy˜wietlany w oknie, 
+- styl okna, 
+- wska«nik do danych class-specific,
+- wska«nik do parametr¢w prezentacji okna.
+
+  TBO_BUTTON - powoduje utowrzenie przycisku w peˆni obsˆugiwanego przez pasek narz©dzi. Tworzone okno potomne powinno zachowywa† si© tak jak okno klasy WC_WINBUTTON (struktura TOOLWIN powinna zawiera† klas© WC_WINBUTTON). Okno musi reagowa† na komunikaty systemowe: BM_SETHILITE, BM_QUERYHILITE, oraz dodatkowe: BM_QUERYWIDTH i BM_QUERYHEIGHT sˆu¾¥ce do automatycznego skalowania. 
+
+  TBO_STDBUTTON - powoduje utworznie przycisku cz©˜ciowo obsˆugiwanego przez pasek narz©dzi. Obsˆuga r¢¾ni si© od TBO_BUTTON tym, ¾e pasek narz©dzi nie wysyˆa komunikat¢w BM_QUERYWIDTH i BM_QUERYHEIGHT, przez co skalowanie przycisk¢w musi by† wykonane przez programist©. Styl ten jest przeznaczony do wsp¢ˆpracy z oknami klasy WC_BUTTON, utworzonych ze stylem BS_PUSHBUTTON.
+
+	Rodzicem dla tworzonych okien jest zawsze okno potomne paska narz©dzi o identyfikatorze TCID_OBJECTS, przechowuj¥ce i przerysowuj¥ce wszystkie obiekty umieszczone na pasku narz©dzi. Wˆa˜cicielem tworzonych okien jest zawsze wˆa˜ciciel paska narz©dzi.
+
+  TBO_SEPARATOR - powoduje utworzenie separatora. Separator nie jest oknem, lecz obiektem rysowanym przez pasek narz©dzi. Dlatego te¾ nie wymaga dodatkowej struktury TOOLWIN, i nie posiada uchwytu okna.
+
+	Dodawane obiekty mog¥ by† pozycjonowane na pasku narz©dzi na trzy sposoby:
+  TBO_BEGINALIGN  - obiekt jest ustawiany na pocz¥tku paska (po lewej lub od g¢ry),
+  TBO_ENDALIGN    - obiekt jest ustawiany od koäca pasak (od prawej lub od doˆu),
+  TBO_CENTERALIGN - obiekt jest ustwaiany po ˜rodku mi©dzy obiektami TBO_BEGINALIGN i TBO_ENDALIGN.
+	Dodawanie nowego obiektu, mo¾e w celu zapewnienia sp¢jno˜ci spowodowa† zmiany w wyr¢wnaniu wcze˜niej dodanych obiekt¢w:
+ - Obiekt TBO_BEGINALIGN nadaje ten styl wszystkim obiektom le¾¥cym po jego lewej stronie (nad nim), "przygniataj¥c" te obiekty do lewej (g¢nej) kraw©dzi paska.
+ - Obiekt TBO_ENDALIGN nadaje ten styl wszystkim obiektom le¾¥cym po jego prawej stronie (pod nim), dosuwaj¥c te obiekty do prawej (dolnej) kraw©dzi paska,
+ - Obiekt TBO_CENTERALIGN stosuje bardziej skomplikowane reguˆy. Je¾eli po jego prawej stronie (pod nim) znajduj¥ si© jakie˜ obiekty ze stylem TBO_BEGINALIGN, to zostaj¥ one "oderwane" od obiekt¢w pocz¥tkowych i wycentrowane. Podobnie, je¾eli przed obiektem (po lewej/nad nim) znajduj¥ si© inne obiekty ze stylem TBO_ENDALIGN, to one tak¾e zostan¥ wycentrowane.
+	Reguˆy te umo¾liwiaj¥ zachowanie sp¢jno˜ci rozmieszczenia obiekt¢w tak, ¾e najpierw mamy obiekty wyr¢wnywane do lewej, nast©pnie centrowane, a na koäcu dosuwane do prawej.
+
+
+
+
+
+	TM_INSERTTOOLTIP
+Parametry:
+  mp1	- [ULONG]  Identyfikator obiektu 
+  mp2	- [PSZ]    Wska«nik do ci¥gu znak¢w definiuj¥cego podpowied«.
+
+Rezultaty:
+	TRUE  - poprawne wykonanie - podpowied« zostaˆa dodana
+	FALSE - bˆ¥d dodania podpowiedzi
+
+	Funkcja dodaje lub usuwa podpowied« do obiektu o podanym identyfikatorze, umieszczonego na pasku narz©dzi. Paramer mp2 powinien zawiera† wska«nik do ci¥gu ASCIIZ zawieraj¥cego ci¥g znak¢w tworz¥cych podpowied«. Podanie wska«nika r¢wnego NULL powoduje usuni©cie podpowiedzi.
+
+
+
+
+
+	TM_MOVEOBJECT
+Parametry:
+  mp1	- [SHORT1]  Identyfikator przenoszonego obiektu 
+          [SHORT2]  Nowa pozycja przenoszonego obiektu		
+  mp2	- [ULONG]   Nowe atrybuty okre˜laj¥ce pozycjonowanie obiekt¢w
+
+Rezultaty:
+	TRUE  - poprawne wykonanie 
+	FALSE - bˆ¥d 
+
+	Komunikat umo¾liwia przeniesienie obiektu z aktualnej pozycji na now¥, liczon¥ wzgl©dem pocz¥tku paska narz©dzi. Atrybuty okre˜laj¥ce pozycjonowanie przydaj¥ si© w sytuacji gdy trzeba zmieni† wyr¢wnanie obiektu wzgl©dem paska narz©dzi. 
+	Akceptowane s¥ nast©puj¥ce atrybuty: TBO_BEGINALIGN, TBO_ENDALIGN i TBO_CENTERALIGN. Podanie liczby 0 powoduje zachowanie dotychczasowych atrybut¢w obiektu.
+	Podaj¥c aktualn¥ pozycj© przy niezerowych atrybutach mo¾emy zmieni† spos¢b justowania obiektu bez zmiany jego poˆo¾enia liczonego od pocz¥tku paska narz©dzi.
+
+
+
+
+
+	TM_POSITIONFROMID
+Parametry:
+  mp1	- [ULONG] objId   	Identyfikator obiektu 
+  mp2	- [ULONG] ulReserved    Zarezerwowany, r¢wny 0.
+
+Rezultaty:
+	-1 bˆ¥d,
+	>0 odczytana pozycja obiektu.
+
+	Komunikat umo¾liwia odczytanie pozycji obiektu liczonej od pocz¥tku paska (jest to wˆa˜ciwie jego numer kolejny). Gdy obiekt o podanym identyfikatorze nie istnieje, komunikat zwraca -1.
+
+
+
+
+
+	TM_QUERYHANDLE
+Parametry:
+  mp1	- [ULONG] ulId        Identyfikator obiektu.
+  mp2	- [ULONG] ulReserved  Zarezerwowany, r¢wny 0.
+
+Rezultaty:
+	NULLHANDLE - bˆ¥d odczytu, obiekt nie istnieje lub jest separatorem.
+
+Opis:
+	Komunikat umo¾liwia odczyt uchwytu okna nale¾¥cego do obiektu o podanym identyfikatorze.
+
+
+
+
+
+	TM_QUERYHEIGHT
+Parametry:
+  mp1	- [ULONG] flOptions   Opcje umo¾liwiaj¥ce okre˜lenie rodzaju zwracanej informacji:
+            TDQ_RESTORED  - peˆna wysoko˜† paska w stanie floating,
+            TDQ_FIXED	  - wysoko˜† paska w stanie zmasymalizowanym,		
+            TDQ_MINIMIZED - wysoko˜† zminimalizowanego paska narz©dzi
+  mp2	- [ULONG] ulMaxLength  Maksymalna dost©pna dˆugo˜† paska.
+
+Rezultaty:
+	Proponowana wysoko˜† paska narz©dzi.
+
+Opis:
+	Komunikat umo¾liwia odczyt proponowanej wysoko˜ci paska narz©dzi, potrzebnej do tego, aby wszystkie obiekty (przyciski) zmie˜ciˆy si©. Procedura paska narz©dzi odczytuje wysoko˜† przycisk¢w i innych obiekt¢w (okien) umieszczonych na nim (wymiary obiekt¢w s¥ ustalane automatycznie podczas dodawania lub usuwania ich). 
+	W przypadku paska narz©dzi umieszczonego poziomo, zostaje wybrana najwi©ksza wysoko˜†, kt¢ra po uzupeˆnienieniu o wysoko˜† obramowania zostaje zwr¢cona. Gdy zostaˆa podana maksymalna dost©pna dˆugo˜† paska r¢¾na od zera, to pasek posiadaj¥cy styl TBS_MULTILINE oblicza wysoko˜† po uwzgl©dnieniu ewentualnego przeniesienia do kolejnych wierszy obiekt¢w nie mieszcz¥cych si© w ulMaxLength.
+	W przypadku paska narz©dzi umieszczonego pionowo, odczytane warto˜ci s¥ sumowane (dodawany jest tak¾e 1-pikselowy odst©p mi©dzy obiektami), po czym dodawana jest wysoko˜† obiekt¢w kontrolnych: paska tytuˆu, przycisku do obracania i separator¢w. Gdy obliczona wysoko˜† przekracza ulMaxLength, to jest do niej zmniejszana. Tak otrzymana warto˜† po uzupeˆnieniu o wysoko˜† obramowania zostaje zwr¢cona.
+	W przypadku u¾ycia opcji TDQ_MINIMIZED dla poziomego pasek narz©dzi zwracana jest staˆa wysoko˜† paska tytuˆu, r¢wna 10 pikseli, plus wysoko˜† obramowania.
+	W przypadku gdy odczytujemy wysoko˜† zminimalizowanego, pionowego paseka narz©dzi, to komunikat zwracana jest jego szeroko˜† z przed minimalizacji powi©kszon¥ o 50%.
+
+
+
+
+
+	TM_QUERYOBJECT
+Parametry:
+  mp1	- [ULONG]   ulId        Identyfikator obiektu.
+  mp2	- [TOOLOBJ] objInfo	Wska«nik do struktury definiuj¥cej parametry obiektu.
+
+Rezultaty:
+	FALSE - bˆ¥d odczytu, obiekt nie istnieje lub jest separatorem.
+	TRUE  - poprawny odczyt informacji o obiekcie
+
+Opis:
+	Komunikat umo¾liwia odczyt struktur kontrolnych obiektu, zawieraj¥cych nast©puja†e dane: poˆo¾enie obiektu, przynale¾no˜c do grupy, atrybuty i stan obiektu, wymiary, identyfikator i dane u¾ytkownika.
+	Odczytane wymiary mog¥ si© r¢¾ni† od rzeczywistych wymiar¢w obiektu na pasku narz©dzi. W przypadku poziomego paska narz©dzi, szeroko˜† obiektu jest prawidˆowa, natomiast jego wysoko˜† mo¾e by† mniejsza od rzeczywistej, dlatego ¾e pasek sam ustala po¾¥dane wysoko˜ci obiekt¢w. Podobna sytuacja wyst©puje w przypadku pionowego paska narz©dzi, gdzie wysoko˜† obiektu jest prawidˆowa, natomiast szeroko˜† mo¾e si© r¢¾ni† od rzeczywistej.
+	Aby odczyta† rzeczywiste wymiary obiektu nale¾y posˆu¾y† si© nast©puj¥cym kodem:
+
+hwnd = (HWND)WinSendMsg(hwndToolbar, TM_QUERYHANDLE, (MPARAM)objId, 0);
+WinQueryWindowRect(hwnd, &rect);
+
+	Struktura rect b©dzie zawiera† aktualne wymiary obiektu. 
+	W przypadku separator¢w, jego grubo˜† zawsze wynosi 5 pikseli, natomiast dˆugo˜c jest r¢wna wysoko˜ci/szeroko˜ci okna potomnego paska narz©dzi, o identyfikatorze TCID_OBJECTPAD. Dokˆadne wymiary separatora odczyta† mo¾emy w nast©puj¥cy spos¢b:
+
+// Odczyt parametr¢w separatora
+WinSendMsg(hwndToolbar, TM_QUERYOBJECT, separatorId, (MPARAM)&objInfo);
+// Odczyt uchwytu okna przechowuj¥cego obiekty
+hwndObjPad = WinWindowFromID(hwndToolbar, TCID_OBJECTPAD);
+// Odczyt wymiar¢w tego okna
+WinQueryWindowRect(hwndObjPad, &wsize);
+
+// Okre˜lenie wymiar¢w separatora
+state = (LONG)WinSendMsg(hwndToolbar, TM_QUERYSTATE, 0, 0);
+if(state & TST_ROTATED)
+{ cx = wsize.xRight - wsize.xLeft;
+  cy = objInfo.cy;
+}
+else
+{ cx = objInfo.cx;
+  cy = wsize.yTop - wsize.yBottom;
+}
+	Zmienne cx i cy zawieraj¥ aktualne wymiary separatora.
+
+
+
+
+
+	TM_QUERYSTATE
+Parametry:
+  mp1	- [ULONG] ulReserved	Warto˜† zarezerwowana, r¢wna 0
+  mp2	- [ULONG] ulReserved	Warto˜† zarezerwowana, r¢wna 0
+
+Rezultaty:
+	Aktualny stan paska narz©dzi:
+TST_MINIMIZED 	- pasek jest zminimalizowany
+TST_FIXED	- pasek jest zmaksymalizowany
+TST_ROTATED	- pasek jest obr¢cony (w pozycji pionowej)
+
+
+
+
+
+	TM_QUERYWIDTH
+Parametry:
+  mp1	- [ULONG] flOptions   Opcje umo¾liwiaj¥ce okre˜lenie rodzaju zwracanej informacji:
+            TDQ_RESTORED  - peˆna szeroko˜† paska w stanie floating,
+            TDQ_FIXED	  - szeroko˜† paska w stanie zmasymalizowanym,		
+            TDQ_MINIMIZED - szeroko˜† zminimalizowanego paska narz©dzi
+  mp2	- [ULONG] ulMaxLength Maksymalna dost©pna dˆugo˜† paska.
+
+Rezultaty:
+	Proponowana szeroko˜† paska narz©dzi.
+
+Opis:
+	Komunikat umo¾liwia odczyt proponowanej szeroko˜ci paska narz©dzi, potrzebnej do tego, aby wszystkie obiekty (przyciski) zmie˜ciˆy si©. Procedura paska narz©dzi odczytuje szeroko˜† przycisk¢w i innych obiekt¢w (okien) umieszczonych na nim (wymiary obiekt¢w s¥ ustalane automatycznie podczas dodawania lub usuwania). 
+	W przypadku paska narz©dzi umieszczonego poziomo, odczytane warto˜ci s¥ sumowane (dodawany jest tak¾e 1-pikselowy odst©p mi©dzy obiektami), po czym dodawana jest szeroko˜† obiekt¢w kontrolnych: paska tytuˆu, przycisku do obracania i separator¢w. Gdy otrzymana warto˜† przekracza ulMaxLength, to jest do niej wyr¢wnywana. Tak otrzymana warto˜† po uzupeˆnieniu o szeroko˜† obramowania zostaje zwr¢cona. 
+	W przypadku paska narz©dzi umieszczonego pionowo, zostaje wybrana najwi©ksza szeroko˜†, kt¢ra po uzupeˆnienieniu o szeroko˜† obramowania zostaje zwr¢cona. Gdy zostaˆa podana maksymalna dost©pna dˆugo˜† ulMaxLength paska r¢¾na od zera, to pasek posiadaj¥cy styl TBS_MULTILINE oblicza szeroko˜† po uwzgl©dnieniu ewentualnego przeniesienia do kolejnych kolumn obiekt¢w nie mieszcz¥cych si© w ulMaxLength.
+	W przypadku u¾ycia opcji TDQ_MINIMIZED dla poziomego paska narz©dzi zwracana jest jego wysoko˜† z przed minimalizacji, powi©kszona o 50%.
+	W przypadku gdy zminimalizowany zostaje pionowy pasek narz©dzi, to zwracana jest staˆa szeroko˜† paska tytuˆu, r¢wna 10 pikseli, plus szeroko˜† obramowania.
+
+
+
+
+
+	TM_QUERYOBJECTCOUNT
+Parametry:
+  mp1	- [ULONG] ulReserved  Zarezerwowany, r¢wny 0.
+  mp2	- [ULONG] ulReserved  Zarezerwowany, r¢wny 0.
+
+Rezultaty:
+	Liczba obiekt¢w umieszczonych na pasku narz©dzi.
+
+Opis:
+	Funkcja zwraca liczb© obiekt¢w umieszczonych na pasku narz©dzi.
+
+
+
+
+
+	TM_QUERYTIP
+Parametry:
+  mp1	- [USHORT1] objId	Identyfikator obiektu.
+	  [USHORT2] usBufSize	Rozmiar bufora szTipText	
+  mp2	- [PSZ]     szTipText	Wska«nik do bufora zawieraj¥cego tekst podpowiedzi.
+
+Rezultaty:
+	Liczba znak¢w tekstu podpowiedzi, bez uwzgl©dnienia koäcowego znaku '0'.
+
+Opis:
+	Komunikat umo¾liwia odczyt tekstu podpowiedzi, lub jego dˆugo˜ci. Podanie szTipText r¢wnego NULL, lub usBufSize umo¾liwia odczyt dˆugo˜ci tekstu podpowiedzi bez konieczno˜ci jego odczytywania.
+
+
+
+
+
+	TM_ROTATE
+Parametry:
+  mp1	- [ULONG] flOptions   Opcje steruj¥ce procesem obracania paska narz©dzi:
+            TBR_ROTATE     - zmiana stanu na przeciwny,              
+            TBR_HORIZONTAL - umieszczenie paska w pozycji poziomej,
+            TBR_VERTICAL   - umieszczenie paska w pozycji pionowej
+  mp2	- [ULONG] ulReserved  Parametr zarezerwowany, r¢wny 0.
+
+Rezultaty:
+	Warto˜† zarezerwowana, r¢wna 0.
+
+Opis:
+	Komunikat powoduje obr¢cenie paska narz©dzi, zgodnie z opcjami podanymi za po˜rednictwem parametru mp1.
+
+
+
+
+
+	TM_SETOBJECT
+Parametry:
+  mp1	- [USHORT1] objId	Identyfikator obiektu.
+	- [USHORT2] usOptions   Opcje umo¾liwiaj¥ce wyb¢r zmienianych p¢l struktury
+  mp2	- [TOOLOBJ] objInfo     Struktura zawiaraj¥ce zmieniane paramerty
+
+Rezultaty:
+	FALSE - bˆ¥d zmiany parametr¢w
+	TRUE  - parametry zostaˆy zmienione poprawnie
+
+Opis:
+	Funkcja umo¾liwia zmian© parametr¢w zapisanych w strukturach kontrolnych obiektu. W zale¾no˜ci od opcji usOptions mo¾na zmienia† nast©puj¥ce warto˜ci:
+
+TSO_GROUP
+	Zmiana przynale¾no˜ci do grupy. Uwzgl©dnione zostaje pole ulGroup przekazywanej struktury TOOLOBJ. Obiekt przyjmuje atrybuty  TBO_PUSHBUTTON, TBO_CHECKBOX lub TBO_RADIOBUTTON z grupy do kt¢rej zostaje przeniesiony. Pozostaˆe atrybuty TBO_* i SPS_* pozostaj¥ bez zmian. 
+
+TSO_SIZE 
+	Zmiana wymiar¢w obiektu. Uwzgl©dnione zostaj¥ pola cx i cy struktury TOOLOBJ. Zmiana wymiar¢w uwidacznia si© w zale¾no˜ci od poˆo¾enia paska narz©dzi. Gdy pasek jest umieszczony poziomo zostaje uwzgl©dniona szeroko˜c obiektu, natomiast wysoko˜† tylko wtedy gdy przekracza aktualn¥ wysko˜† paska narz©dzi.
+	Gdy pasek jest umieszczony pionowo zostaje uwzgl©dniona wysoko˜† obiektu, natomiast szeroko˜† tylko wtedy gdy jest wi©ksza ni¾ aktualna szeroko˜† paska narz©dzi.
+	Obiekty utworzone z atrybutem TBO_BUTTON i TBO_SEPARATOR ustalaj¥ swoje wymiary same, przez co zmiana rozmiar¢w za pomoc¥ TM_SETOBJECT jest ignorowana.
+
+TSO_USER     
+	Zmiana pola ulUser struktury skojarzonej z obiektem. 
+
+	W obecnej implementacji nie mo¾na jeszcze zmienia† zawarto˜ci pola flAttribute (by† mo¾e b©dzie mo¾na to zrobi† w kolejnych wersjach). Pole id nie b©dzie modyfikowalne. Pole iPosition mo¾na modyfikowa† po˜rednio za pomoc¥ komunikatu TM_MOVEOBJECT.
+	Mo¾na modyfikowa† kilka p¢l jednocze˜nie ˆ¥cz¥c ze sob¥ opcje za pomoc¥ operatora OR.
+
+
+
+
+
+	TM_SHOWOBJECT
+Parametry:
+  mp2	- [ULONG] ulId        Identyfikator obiektu.
+  mp2	- [ULONG] bNewState   Nowy stan obiektu.
+            FALSE - ukrycie obiektu,
+            TRUE  - pokazanie obiektu.
+
+Rezultaty:
+	TRUE  - poprawne wykonanie, 
+	FALSE - bˆ¥d (bˆ©dny identyfikator lub rozkaz dotyczyˆ separatora).
+
+
+Opis:
+	Komunikat umo¾liwia sterowanie "widzialno˜ci¥" obiektu umieszczonego na pasku narz©dzi. Ukrywany obiekt nie zmienia swojej pozycji ani identyfikatora. Nie zwalnia tak¾e zajmowanych przez siebie zasob¢w takich jak np. pami©†.
+	Aktualny stan obiektu mo¾na odczyta† za pomoc¥ komunikatu TM_QUERYOBJECT. W polu flAttribute zwr¢conej struktury TOOLOBJ, bit TBO_HIDE zawiera informacje o aktualnym stanie obiektu. Testuj¥c bit TBO_DISABLE mo¾na te¾ sprawdzi† czy obiekt jest zablokowany (to ostatnie nie dotyczy separator¢w).
+
+
+*******************************
+Instrukcja u¾ytkowania (tematy do napisania).
+
+Struktura paska narz©dzi.
+  Predefiniowane okna potomne.
+Sterowanie pozycjonowaniem paska narz©dzi.
+  Sterowanie automatycznym skalowaniem.
+  Sterowanie procesem maksymalizacji (dokowania).
+  Sterowanie procesem minimalizacji.
+  Sterowanie procesem przej˜cia do stanu "floating".
+  Sterowanie obracaniem.
+  Komunikat WM_MINMAXFRAME
+Kontrola przesuwania paska narz©dzi.
+  Rozpocz©cie przesuwania.
+  Przesuwanie.
+  Zakoäczenie przesuwania.
+  Komunikat WM_TRACKFRAME. 
+Dodawanie i usuwanie obiekt¢w.
+Sterowanie zachowaniem obiekt¢w.
